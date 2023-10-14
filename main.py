@@ -14,11 +14,18 @@ piece_names = [
     'king', 'queen', 'bishop', 'knight', 'rook', 'pawn'
 ]
 
+# piece_rectangles = {}
+
 for color in ['white', 'black']:
     for piece in piece_names:
         piece_images[f'{color}_{piece}'] = pygame.transform.smoothscale(
             pygame.image.load(f'{rep}/{color}_{piece}.png'), (SQUARE_SIZE, SQUARE_SIZE)
         )
+        # piece_images[f'{color}_{piece}'].convert()
+        # # Draw rectangle around the image
+        # piece_rectangles[f'{color}_{piece}'] = piece_images[f'{color}_{piece}'].get_rect()
+        # piece_rectangles[f'{color}_{piece}'].center = SQUARE_SIZE // 2, SQUARE_SIZE // 2
+
 
 # Initialize piece positions using lists
 piece_positions = {
@@ -44,44 +51,34 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chess Board")
 
 
+def draw_board_cell(col_, row_):
+    xx = col_ * SQUARE_SIZE
+    yy = row_ * SQUARE_SIZE
+    color_ = WHITE if (row_ + col_) % 2 == 0 else GREY
+    pygame.draw.rect(screen, color_, (xx, yy, SQUARE_SIZE, SQUARE_SIZE))
+
+
 def draw_board():
-    for row in range(8):
-        for col in range(8):
-            x = col * SQUARE_SIZE
-            y = row * SQUARE_SIZE
-            color = WHITE if (row + col) % 2 == 0 else GREY
-            pygame.draw.rect(screen, color, (x, y, SQUARE_SIZE, SQUARE_SIZE))
+    for row_ in range(8):
+        for col_ in range(8):
+            draw_board_cell(col_, row_)
 
 
 def draw_pieces():
-    for piece, positions in piece_positions.items():
-        for col, row in positions:
-            draw_piece(piece, col, row)
+    for piece_, positions in piece_positions.items():
+        for col_, row_ in positions:
+            draw_piece(piece_, col_, row_)
 
 
-def draw_piece(piece_name, col, row):
+def draw_piece(piece_name, col_, row_):
     piece_image = piece_images[piece_name]
-    x, y = col * SQUARE_SIZE, row * SQUARE_SIZE
-    screen.blit(piece_image, (x, y))
-
-
-# Helper function to check if a move is valid for a pawn
-def is_valid_move(start, end, color):
-    if start[0] == end[0] and (end[1] - start[1] == 1 or (end[1] - start[1] == 2 and start[1] == 1)):
-        if color == "white":
-            return all(piece_positions.get(f"white_pawn", []) != [end[0], end[1]]) and all(
-                piece_positions.get(f"black_pawn", []) != [end[0], end[1]]
-            )
-        elif color == "black":
-            return all(piece_positions.get(f"black_pawn", []) != [end[0], end[1]]) and all(
-                piece_positions.get(f"white_pawn", []) != [end[0], end[1]]
-            )
-    else:
-        return False
+    xx, yy = col_ * SQUARE_SIZE, row_ * SQUARE_SIZE
+    screen.blit(piece_image, (xx, yy))
 
 
 # Main game loop
 selected_piece = None
+selected_piece_positionX, selected_piece_positionY = -1, -1
 dragging = False
 
 running = True
@@ -91,39 +88,41 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and not dragging:
-            # TODO
-            pass
-            # x, y = pygame.mouse.get_pos()
-            # col = x // SQUARE_SIZE
-            # row = y // SQUARE_SIZE
-            # for piece in piece_positions.keys():
-            #     if (col, row) in piece_positions[piece] and piece.startswith("white" if piece[0] == "w" else "black"):
-            #         selected_piece = piece
-            #         dragging = True
-            #         break
-        elif event.type == pygame.MOUSEBUTTONUP and dragging:
-            # TODO
-            pass
-            # x, y = pygame.mouse.get_pos()
-            # col = x // SQUARE_SIZE
-            # row = y // SQUARE_SIZE
-            # if is_valid_move(piece_positions[selected_piece][0], (col, row), selected_piece.split("_")[0]):
-            #     piece_positions[selected_piece] = [(col, row)]
-            # else:
-            #     col, row = piece_positions[selected_piece][0]
-            # selected_piece = None
-            # dragging = False
+            x, y = pygame.mouse.get_pos()
+            col = x // SQUARE_SIZE
+            row = y // SQUARE_SIZE
+            for piece in piece_positions.keys():
+                if (col, row) in piece_positions[piece]:
+                    selected_piece = piece
+                    selected_piece_positionX, selected_piece_positionY = col, row
+                    dragging = True
+                    break
 
-    # screen.fill((0, 0, 0))
+        elif event.type == pygame.MOUSEBUTTONUP and dragging:
+            x, y = pygame.mouse.get_pos()
+            col = x // SQUARE_SIZE
+            row = y // SQUARE_SIZE
+
+            # Remove the piece from its old position
+            piece_positions[selected_piece].remove((selected_piece_positionX, selected_piece_positionY))
+
+            # Add the piece to its new position
+            piece_positions[selected_piece].append((col, row))
+
+            draw_board()  # Redraw the board to clear old and update new positions
+            draw_pieces()  # Redraw the pieces with the updated positions
+
+            selected_piece = None
+            selected_piece_positionX, selected_piece_positionY = -1, -1
+            dragging = False
+
     draw_board()
     draw_pieces()
 
     if dragging and selected_piece:
         x, y = pygame.mouse.get_pos()
-        col = x // SQUARE_SIZE
-        row = y // SQUARE_SIZE
-        draw_piece(selected_piece, col, row)
-
+        piece_image = piece_images[selected_piece]
+        screen.blit(piece_image, (x - SQUARE_SIZE // 2, y - SQUARE_SIZE // 2))
     pygame.display.flip()
 
 # Quit Pygame
