@@ -102,19 +102,24 @@ while running:
             x, y = pygame.mouse.get_pos()
             col = x // SQUARE_SIZE
             row = y // SQUARE_SIZE
+            if col not in range(0, 8) or row not in range(0, 8):
+                selected_piece = None
+                selected_piece_positionX, selected_piece_positionY = -1, -1
+                dragging = False
+                break
+            else:
+                # Remove the piece from its old position
+                piece_positions[selected_piece].remove((selected_piece_positionX, selected_piece_positionY))
 
-            # Remove the piece from its old position
-            piece_positions[selected_piece].remove((selected_piece_positionX, selected_piece_positionY))
+                # Add the piece to its new position
+                piece_positions[selected_piece].append((col, row))
 
-            # Add the piece to its new position
-            piece_positions[selected_piece].append((col, row))
+                draw_board()  # Redraw the board to clear old and update new positions
+                draw_pieces()  # Redraw the pieces with the updated positions
 
-            draw_board()  # Redraw the board to clear old and update new positions
-            draw_pieces()  # Redraw the pieces with the updated positions
-
-            selected_piece = None
-            selected_piece_positionX, selected_piece_positionY = -1, -1
-            dragging = False
+                selected_piece = None
+                selected_piece_positionX, selected_piece_positionY = -1, -1
+                dragging = False
 
     draw_board()
     draw_pieces()
