@@ -14,18 +14,11 @@ piece_names = [
     'king', 'queen', 'bishop', 'knight', 'rook', 'pawn'
 ]
 
-# piece_rectangles = {}
-
 for color in ['white', 'black']:
     for piece in piece_names:
         piece_images[f'{color}_{piece}'] = pygame.transform.smoothscale(
             pygame.image.load(f'{rep}/{color}_{piece}.png'), (SQUARE_SIZE, SQUARE_SIZE)
         )
-        # piece_images[f'{color}_{piece}'].convert()
-        # # Draw rectangle around the image
-        # piece_rectangles[f'{color}_{piece}'] = piece_images[f'{color}_{piece}'].get_rect()
-        # piece_rectangles[f'{color}_{piece}'].center = SQUARE_SIZE // 2, SQUARE_SIZE // 2
-
 
 # Initialize piece positions using lists
 piece_positions = {
@@ -71,9 +64,74 @@ def draw_pieces():
 
 
 def draw_piece(piece_name, col_, row_):
-    piece_image = piece_images[piece_name]
+    piece_image_ = piece_images[piece_name]
     xx, yy = col_ * SQUARE_SIZE, row_ * SQUARE_SIZE
-    screen.blit(piece_image, (xx, yy))
+    screen.blit(piece_image_, (xx, yy))
+
+
+def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_pawn'):
+        if (
+                (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1) or
+                (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and
+                 selected_piece_positionY_ == 1)
+        ):
+            # Valid pawn move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+    elif selected_piece_.startswith('black_pawn'):
+        if (
+                (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1) or
+                (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 2 and
+                 selected_piece_positionY_ == 6)
+        ):
+            # Valid pawn move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+
+def update_king_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_king') or selected_piece_.startswith('black_king'):
+        if abs(col_ - selected_piece_positionX_) <= 1 and abs(row_ - selected_piece_positionY_) <= 1:
+            # Valid king move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+
+def update_queen_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_queen') or selected_piece_.startswith('black_queen'):
+        if (col_ == selected_piece_positionX_ or row_ == selected_piece_positionY_ or
+                abs(col_ - selected_piece_positionX_) == abs(row_ - selected_piece_positionY_)):
+            # Valid queen move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+
+def update_bishop_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_bishop') or selected_piece_.startswith('black_bishop'):
+        if abs(col_ - selected_piece_positionX_) == abs(row_ - selected_piece_positionY_):
+            # Valid bishop move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+
+def update_knight_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_knight') or selected_piece_.startswith('black_knight'):
+        if (
+                (abs(col_ - selected_piece_positionX_) == 1 and abs(row_ - selected_piece_positionY_) == 2) or
+                (abs(col_ - selected_piece_positionX_) == 2 and abs(row_ - selected_piece_positionY_) == 1)
+        ):
+            # Valid knight move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+
+def update_rook_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if selected_piece_.startswith('white_rook') or selected_piece_.startswith('black_rook'):
+        if col_ == selected_piece_positionX_ or row_ == selected_piece_positionY:
+            # Valid rook move
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
 
 
 # Main game loop
@@ -108,11 +166,14 @@ while running:
                 dragging = False
                 break
             else:
-                # Remove the piece from its old position
-                piece_positions[selected_piece].remove((selected_piece_positionX, selected_piece_positionY))
 
-                # Add the piece to its new position
-                piece_positions[selected_piece].append((col, row))
+                # Check and update piece movements
+                update_pawn_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                update_king_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                update_queen_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                update_bishop_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                update_knight_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                update_rook_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
                 draw_board()  # Redraw the board to clear old and update new positions
                 draw_pieces()  # Redraw the pieces with the updated positions
