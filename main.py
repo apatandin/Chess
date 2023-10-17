@@ -141,7 +141,6 @@ def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_
                 remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
 
 
-# TODO: This method doesn't work as expected.
 def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, selected_piece_positionX_,
                                                               selected_piece_positionY_):
     if col_ == selected_piece_positionX_ and row_ != selected_piece_positionY_:
@@ -150,34 +149,68 @@ def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, select
             if curr_piece_at_y_pos is not None:
                 return False
     elif row_ == selected_piece_positionY_ and col_ != selected_piece_positionX_:
-        for x_pos in range(min(selected_piece_positionX, col_) + 1, max(selected_piece_positionX_, col_)):
+        for x_pos in range(min(selected_piece_positionX_, col_) + 1, max(selected_piece_positionX_, col_)):
             curr_piece_at_x_pos = piece_at_position(x_pos, row_)
             if curr_piece_at_x_pos is not None:
                 return False
     elif abs(col_ - selected_piece_positionX_) == abs(row_ - selected_piece_positionY_):
-        x_pos = min(selected_piece_positionX_, col_) + 1
-        y_pos = min(selected_piece_positionY_, row_) + 1
-        while x_pos < max(selected_piece_positionX_, col_) and y_pos < max(selected_piece_positionY_, row_):
+        x_dir = 1 if col_ > selected_piece_positionX_ else -1
+        y_dir = 1 if row_ > selected_piece_positionY_ else -1
+        x_pos = selected_piece_positionX_ + x_dir
+        y_pos = selected_piece_positionY_ + y_dir
+        while x_pos != col_ and y_pos != row_:
             curr_piece_at_x_y_pos = piece_at_position(x_pos, y_pos)
             if curr_piece_at_x_y_pos is not None:
                 return False
-            x_pos += 1
-            y_pos += 1
-    else:
-        return True
+            x_pos += x_dir
+            y_pos += y_dir
+    return True
+
+
+def check_if_no_pieces_present_between_old_and_new_bishop_move(col_, row_, selected_piece_positionX_,
+                                                               selected_piece_positionY_):
+    x_dir = 1 if col_ > selected_piece_positionX_ else -1
+    y_dir = 1 if row_ > selected_piece_positionY_ else -1
+    x_pos = selected_piece_positionX_ + x_dir
+    y_pos = selected_piece_positionY_ + y_dir
+    while x_pos != col_ and y_pos != row_:
+        curr_piece_at_x_y_pos = piece_at_position(x_pos, y_pos)
+        if curr_piece_at_x_y_pos is not None:
+            return False
+        x_pos += x_dir
+        y_pos += y_dir
+    return True
+
+
+def check_if_no_pieces_present_between_old_and_new_rook_move(col_, row_, selected_piece_positionX_,
+                                                             selected_piece_positionY_):
+    if col_ == selected_piece_positionX_ and row_ != selected_piece_positionY_:
+        for y_pos in range(min(selected_piece_positionY_, row_) + 1, max(selected_piece_positionY_, row_)):
+            curr_piece_at_y_pos = piece_at_position(col_, y_pos)
+            if curr_piece_at_y_pos is not None:
+                return False
+    elif row_ == selected_piece_positionY_ and col_ != selected_piece_positionX_:
+        for x_pos in range(min(selected_piece_positionX_, col_) + 1, max(selected_piece_positionX_, col_)):
+            curr_piece_at_x_pos = piece_at_position(x_pos, row_)
+            if curr_piece_at_x_pos is not None:
+                return False
+    return True
 
 
 def update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
                   selected_piece_positionY_):
     piece_at_new_position = piece_at_position(col_, row_)
-    if piece_at_new_position is None:
-        # TODO: add this in between check for queen, rook and bishop (and also for pawn with 2 forward steps but not
-        #  here)
-        # if selected_piece_.endswith('queen') and check_if_no_pieces_present_between_old_and_new_queen_move(
-        #         col_, row_, selected_piece_positionX_, selected_piece_positionY_):
+    big_check = selected_piece_.endswith('king') or selected_piece_.endswith('knight') or \
+                (selected_piece_.endswith('queen') and check_if_no_pieces_present_between_old_and_new_queen_move(
+                    col_, row_, selected_piece_positionX_, selected_piece_positionY_)) or \
+                (selected_piece_.endswith('bishop') and check_if_no_pieces_present_between_old_and_new_bishop_move(
+                    col_, row_, selected_piece_positionX_, selected_piece_positionY_)) or \
+                (selected_piece_.endswith('rook') and check_if_no_pieces_present_between_old_and_new_rook_move(
+                    col_, row_, selected_piece_positionX_, selected_piece_positionY_))
+    if piece_at_new_position is None and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
-    elif is_opposite_color(selected_piece_, piece_at_new_position):
+    elif is_opposite_color(selected_piece_, piece_at_new_position) and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
         remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
