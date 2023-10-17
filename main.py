@@ -96,48 +96,47 @@ def remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_pie
 
 def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
     piece_at_new_position = piece_at_position(col_, row_)
-    white_pawn_takes_black_piece_check = \
-        (piece_at_new_position is not None and piece_at_new_position.startswith('black_') and
-         ((col_ == selected_piece_positionX_ + 1 and row_ == selected_piece_positionY_ + 1) or
-          (col_ == selected_piece_positionX_ - 1 and row_ == selected_piece_positionY_ + 1)))
-    black_pawn_takes_white_piece_check = \
-        (piece_at_new_position is not None and piece_at_new_position.startswith('white_') and
-         ((col_ == selected_piece_positionX_ + 1 and row_ == selected_piece_positionY_ - 1) or
-          (col_ == selected_piece_positionX_ - 1 and row_ == selected_piece_positionY_ - 1)))
-    white_pawn_moves_forward_check = \
-        ((col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1) or
-         (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and
-          selected_piece_positionY_ == 1))
-    black_pawn_moves_forward_check = \
-        ((col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1) or
-         (col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 2 and
-          selected_piece_positionY_ == 6))
     if selected_piece_.startswith('white_pawn'):
-        if (
-                white_pawn_moves_forward_check or
-                white_pawn_takes_black_piece_check
+        if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and \
+                selected_piece_positionY_ == 1:
+            # Initial move: two steps forward
+            if (piece_at_new_position is None and
+                    piece_at_position(col_, selected_piece_positionY_ + 1) is None):
+                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+                piece_positions[selected_piece_].append((col_, row_))
+        elif (
+                col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1 and
+                piece_at_new_position is None
+        ) or (
+                piece_at_new_position is not None and piece_at_new_position.startswith('black_') and
+                (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
+                row_ == selected_piece_positionY_ + 1
         ):
-            # Valid pawn move
-            if piece_at_new_position is None and white_pawn_moves_forward_check:
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
-            elif white_pawn_takes_black_piece_check:
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
+            # Valid pawn move (one step forward or capturing diagonally)
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+            if piece_at_new_position is not None:
                 remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
-
     elif selected_piece_.startswith('black_pawn'):
-        if (
-                black_pawn_moves_forward_check or
-                black_pawn_takes_white_piece_check
+        if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 2 and \
+                selected_piece_positionY_ == 6:
+            # Initial move: two steps forward
+            if (piece_at_new_position is None and
+                    piece_at_position(col_, selected_piece_positionY_ - 1) is None):
+                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+                piece_positions[selected_piece_].append((col_, row_))
+        elif (
+                col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1 and
+                piece_at_new_position is None
+        ) or (
+                piece_at_new_position is not None and piece_at_new_position.startswith('white_') and
+                (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
+                row_ == selected_piece_positionY_ - 1
         ):
-            # Valid pawn move
-            if piece_at_new_position is None and black_pawn_moves_forward_check:
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
-            elif black_pawn_takes_white_piece_check:
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
+            # Valid pawn move (one step forward or capturing diagonally)
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+            if piece_at_new_position is not None:
                 remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
 
 
