@@ -209,7 +209,7 @@ def update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
     if piece_at_new_position is None and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
-    elif is_opposite_color(selected_piece_, piece_at_new_position) and big_check:
+    elif piece_at_new_position is not None and is_opposite_color(selected_piece_, piece_at_new_position) and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
         remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
