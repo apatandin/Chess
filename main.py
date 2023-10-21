@@ -38,6 +38,13 @@ piece_positions = {
 removed_white_pieces = []
 removed_black_pieces = []
 
+check_if_moved = {
+    'white_king': False,
+    'black_king': False,
+    'white_rook': False,
+    'black_rook': False
+}
+
 # Initialize Pygame
 pygame.init()
 
@@ -221,6 +228,8 @@ def update_king_positions(col_, row_, selected_piece_, selected_piece_positionX_
             # Valid king move
             update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
                           selected_piece_positionY_)
+            if not check_if_moved[selected_piece_]:
+                check_if_moved[selected_piece_] = True
 
 
 def update_queen_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -257,6 +266,53 @@ def update_rook_positions(col_, row_, selected_piece_, selected_piece_positionX_
             # Valid rook move
             update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
                           selected_piece_positionY_)
+            if not check_if_moved[selected_piece_]:
+                check_if_moved[selected_piece_] = True
+
+
+def long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if (col_, row_) in [(0, selected_piece_positionY_), (2, selected_piece_positionY_)] and \
+            (selected_piece_positionX_, selected_piece_positionY_) == (4, selected_piece_positionY_):
+        no_piece_in_between = True
+        for x_pos in range(1, 4):
+            piece_in_between = piece_at_position(x_pos, selected_piece_positionY_)
+            if piece_in_between is not None:
+                no_piece_in_between = False
+        if no_piece_in_between:
+            rook_color = selected_piece_.split("_")[0]
+            # Bring king to (2, y_idx)
+            piece_positions[selected_piece_].remove((4, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((2, selected_piece_positionY_))
+            # Bring rook to (3, y_idx)
+            piece_positions[f'{rook_color}_rook'].remove((0, selected_piece_positionY_))
+            piece_positions[f'{rook_color}_rook'].append((3, selected_piece_positionY_))
+
+
+def short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if (col_, row_) in [(6, selected_piece_positionY_), (7, selected_piece_positionY_)] and \
+            (selected_piece_positionX_, selected_piece_positionY_) == (4, selected_piece_positionY_):
+        no_piece_in_between = True
+        for x_pos in range(5, 7):
+            piece_in_between = piece_at_position(x_pos, selected_piece_positionY_)
+            if piece_in_between is not None:
+                no_piece_in_between = False
+        if no_piece_in_between:
+            rook_color = selected_piece_.split("_")[0]
+            # Bring king to (6, y_idx)
+            piece_positions[selected_piece_].remove((4, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((6, selected_piece_positionY_))
+            # Bring rook to (5, y_idx)
+            piece_positions[f'{rook_color}_rook'].remove((7, selected_piece_positionY_))
+            piece_positions[f'{rook_color}_rook'].append((5, selected_piece_positionY_))
+
+
+def castling(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if (selected_piece_.startswith('white_king') and not check_if_moved[selected_piece_]
+        and not check_if_moved['white_rook']) or \
+            (selected_piece_.startswith('black_king') and not check_if_moved[selected_piece_] and not check_if_moved[
+                'black_rook']):
+        long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_)
+        short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_)
 
 
 # Main game loop
@@ -299,6 +355,11 @@ while running:
                 update_bishop_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
                 update_knight_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
                 update_rook_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+
+                # Check and update special piece movements
+                castling(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                # pawn_promotion(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                # en_passant(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
                 draw_board()  # Redraw the board to clear old and update new positions
                 draw_pieces()  # Redraw the pieces with the updated positions
