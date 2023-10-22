@@ -63,6 +63,12 @@ check_if_moved = {
     'black_rook': False
 }
 
+# Check if pawns are initially moved 2 steps forward
+check_if_moved_pawns = {
+    'black_pawn': [False for i in range(8)],
+    'white_pawn': [False for i in range(8)]
+}
+
 # Initialize Pygame
 pygame.init()
 
@@ -119,6 +125,29 @@ def remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_pie
             removed_white_pieces.append(piece_at_new_position)
 
 
+def en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, y_offset):
+    potential_opposite_pawn_left, potential_opposite_pawn_right = get_potential_pawns_en_passant(
+        selected_piece_positionX_, selected_piece_positionY_)
+    if col_ == selected_piece_positionX_ - 1 and row_ == selected_piece_positionY_ + y_offset and \
+            potential_opposite_pawn_left is not None and potential_opposite_pawn_left.endswith('pawn'):
+        if is_opposite_color(selected_piece_, potential_opposite_pawn_left) and \
+                check_if_moved_pawns[potential_opposite_pawn_left][selected_piece_positionX_ - 1]:
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+            remove_opposite_pawn_en_passant(potential_opposite_pawn_left, selected_piece_positionX_ - 1,
+                                            selected_piece_positionY_)
+    if col_ == selected_piece_positionX_ + 1 and row_ == selected_piece_positionY_ + y_offset and \
+            potential_opposite_pawn_right is not None and potential_opposite_pawn_right.endswith('pawn'):
+        if is_opposite_color(selected_piece_, potential_opposite_pawn_right) and \
+                check_if_moved_pawns[potential_opposite_pawn_right][selected_piece_positionX_ + 1]:
+            piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+            piece_positions[selected_piece_].append((col_, row_))
+
+            remove_opposite_pawn_en_passant(potential_opposite_pawn_right, selected_piece_positionX_ + 1,
+                                            selected_piece_positionY_)
+
+
 def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
     piece_at_new_position = piece_at_position(col_, row_)
     if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and \
@@ -126,6 +155,7 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         # Initial move: two steps forward
         if (piece_at_new_position is None and
                 piece_at_position(col_, selected_piece_positionY_ + 1) is None):
+            check_if_moved_pawns[selected_piece_][selected_piece_positionX_] = True
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
     elif (
@@ -141,6 +171,10 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         piece_positions[selected_piece_].append((col_, row_))
         if piece_at_new_position is not None:
             remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+    elif piece_at_new_position is None and selected_piece_positionY_ == 4:
+        # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
+        # it has just been initially moved 2 steps forward
+        en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, 1)
 
 
 def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
@@ -150,6 +184,7 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         # Initial move: two steps forward
         if (piece_at_new_position is None and
                 piece_at_position(col_, selected_piece_positionY_ - 1) is None):
+            check_if_moved_pawns[selected_piece_][selected_piece_positionX_] = True
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
     elif (
@@ -165,6 +200,28 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         piece_positions[selected_piece_].append((col_, row_))
         if piece_at_new_position is not None:
             remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+    elif piece_at_new_position is None and selected_piece_positionY_ == 3:
+        # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
+        # it has just been initially moved 2 steps forward
+        en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, -1)
+
+
+def get_potential_pawns_en_passant(selected_piece_positionX_, selected_piece_positionY_):
+    potential_opposite_pawn_left = None
+    if selected_piece_positionX_ in range(1, 8):
+        potential_opposite_pawn_left = piece_at_position(selected_piece_positionX_ - 1, selected_piece_positionY_)
+    potential_opposite_pawn_right = None
+    if selected_piece_positionX_ in range(0, 7):
+        potential_opposite_pawn_right = piece_at_position(selected_piece_positionX_ + 1, selected_piece_positionY_)
+    return potential_opposite_pawn_left, potential_opposite_pawn_right
+
+
+def remove_opposite_pawn_en_passant(potential_opposite_pawn, opposite_pawn_positionX_, opposite_pawn_positionY_):
+    piece_positions[potential_opposite_pawn].remove((opposite_pawn_positionX_, opposite_pawn_positionY_))
+    if potential_opposite_pawn.startswith('black_'):
+        removed_black_pieces.append(potential_opposite_pawn)
+    else:
+        removed_white_pieces.append(potential_opposite_pawn)
 
 
 def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -393,10 +450,9 @@ while running:
                 update_knight_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
                 update_rook_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
-                # Check and update special piece movements
                 castling(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+
                 # pawn_promotion(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                # en_passant(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
                 draw_board()  # Redraw the board to clear old and update new positions
                 draw_pieces()  # Redraw the pieces with the updated positions
