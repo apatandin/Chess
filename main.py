@@ -174,9 +174,7 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
 
         # check for pawn promotion
         if row_ == 7:
-            piece_color = selected_piece_.split("_")[0]
-            piece_positions[selected_piece_].remove((col_, row_))
-            piece_positions[f'{piece_color}_queen'].append((col_, row_))
+            pawn_promotion(col_, row_, selected_piece_)
 
     elif piece_at_new_position is None and selected_piece_positionY_ == 4:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
@@ -210,14 +208,18 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
 
         # check for pawn promotion
         if row_ == 0:
-            piece_color = selected_piece_.split("_")[0]
-            piece_positions[selected_piece_].remove((col_, row_))
-            piece_positions[f'{piece_color}_queen'].append((col_, row_))
+            pawn_promotion(col_, row_, selected_piece_)
 
     elif piece_at_new_position is None and selected_piece_positionY_ == 3:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
         # it has just been initially moved 2 steps forward
         en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, -1)
+
+
+def pawn_promotion(col_, row_, selected_piece_):
+    piece_color = selected_piece_.split("_")[0]
+    piece_positions[selected_piece_].remove((col_, row_))
+    piece_positions[f'{piece_color}_queen'].append((col_, row_))
 
 
 def get_potential_pawns_en_passant(selected_piece_positionX_, selected_piece_positionY_):
