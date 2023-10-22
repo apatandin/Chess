@@ -171,6 +171,13 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         piece_positions[selected_piece_].append((col_, row_))
         if piece_at_new_position is not None:
             remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+
+        # check for pawn promotion
+        if row_ == 7:
+            piece_color = selected_piece_.split("_")[0]
+            piece_positions[selected_piece_].remove((col_, row_))
+            piece_positions[f'{piece_color}_queen'].append((col_, row_))
+
     elif piece_at_new_position is None and selected_piece_positionY_ == 4:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
         # it has just been initially moved 2 steps forward
@@ -200,6 +207,13 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         piece_positions[selected_piece_].append((col_, row_))
         if piece_at_new_position is not None:
             remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+
+        # check for pawn promotion
+        if row_ == 0:
+            piece_color = selected_piece_.split("_")[0]
+            piece_positions[selected_piece_].remove((col_, row_))
+            piece_positions[f'{piece_color}_queen'].append((col_, row_))
+
     elif piece_at_new_position is None and selected_piece_positionY_ == 3:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
         # it has just been initially moved 2 steps forward
@@ -451,8 +465,6 @@ while running:
                 update_rook_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
                 castling(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-
-                # pawn_promotion(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
 
                 draw_board()  # Redraw the board to clear old and update new positions
                 draw_pieces()  # Redraw the pieces with the updated positions
