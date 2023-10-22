@@ -20,21 +20,39 @@ for color in ['white', 'black']:
             pygame.image.load(f'{rep}/{color}_{piece}.png'), (SQUARE_SIZE, SQUARE_SIZE)
         )
 
-# Initialize piece positions using lists
+# # Initialize piece positions using lists with black as player 1
+# piece_positions = {
+#     'white_king': [(4, 0)],
+#     'black_king': [(4, 7)],
+#     'white_queen': [(3, 0)],
+#     'black_queen': [(3, 7)],
+#     'white_bishop': [(2, 0), (5, 0)],
+#     'black_bishop': [(2, 7), (5, 7)],
+#     'white_knight': [(1, 0), (6, 0)],
+#     'black_knight': [(1, 7), (6, 7)],
+#     'white_rook': [(0, 0), (7, 0)],
+#     'black_rook': [(0, 7), (7, 7)],
+#     'white_pawn': [(i, 1) for i in range(8)],
+#     'black_pawn': [(i, 6) for i in range(8)]
+# }
+
+# Initialize piece positions using lists with white as player 1
 piece_positions = {
-    'white_king': [(4, 0)],
-    'black_king': [(4, 7)],
-    'white_queen': [(3, 0)],
-    'black_queen': [(3, 7)],
-    'white_bishop': [(2, 0), (5, 0)],
-    'black_bishop': [(2, 7), (5, 7)],
-    'white_knight': [(1, 0), (6, 0)],
-    'black_knight': [(1, 7), (6, 7)],
-    'white_rook': [(0, 0), (7, 0)],
-    'black_rook': [(0, 7), (7, 7)],
-    'white_pawn': [(i, 1) for i in range(8)],
-    'black_pawn': [(i, 6) for i in range(8)]
+    'black_king': [(4, 0)],
+    'white_king': [(4, 7)],
+    'black_queen': [(3, 0)],
+    'white_queen': [(3, 7)],
+    'black_bishop': [(2, 0), (5, 0)],
+    'white_bishop': [(2, 7), (5, 7)],
+    'black_knight': [(1, 0), (6, 0)],
+    'white_knight': [(1, 7), (6, 7)],
+    'black_rook': [(0, 0), (7, 0)],
+    'white_rook': [(0, 7), (7, 7)],
+    'black_pawn': [(i, 1) for i in range(8)],
+    'white_pawn': [(i, 6) for i in range(8)]
 }
+white_first_player = True
+
 removed_white_pieces = []
 removed_black_pieces = []
 
@@ -101,50 +119,69 @@ def remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_pie
             removed_white_pieces.append(piece_at_new_position)
 
 
-def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
     piece_at_new_position = piece_at_position(col_, row_)
-    if selected_piece_.startswith('white_pawn'):
-        if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and \
-                selected_piece_positionY_ == 1:
-            # Initial move: two steps forward
-            if (piece_at_new_position is None and
-                    piece_at_position(col_, selected_piece_positionY_ + 1) is None):
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
-        elif (
-                col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1 and
-                piece_at_new_position is None
-        ) or (
-                piece_at_new_position is not None and piece_at_new_position.startswith('black_') and
-                (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
-                row_ == selected_piece_positionY_ + 1
-        ):
-            # Valid pawn move (one step forward or capturing diagonally)
+    if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 2 and \
+            selected_piece_positionY_ == 1:
+        # Initial move: two steps forward
+        if (piece_at_new_position is None and
+                piece_at_position(col_, selected_piece_positionY_ + 1) is None):
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
-            if piece_at_new_position is not None:
-                remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
-    elif selected_piece_.startswith('black_pawn'):
-        if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 2 and \
-                selected_piece_positionY_ == 6:
-            # Initial move: two steps forward
-            if (piece_at_new_position is None and
-                    piece_at_position(col_, selected_piece_positionY_ - 1) is None):
-                piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
-                piece_positions[selected_piece_].append((col_, row_))
-        elif (
-                col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1 and
-                piece_at_new_position is None
-        ) or (
-                piece_at_new_position is not None and piece_at_new_position.startswith('white_') and
-                (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
-                row_ == selected_piece_positionY_ - 1
-        ):
-            # Valid pawn move (one step forward or capturing diagonally)
+    elif (
+            col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1 and
+            piece_at_new_position is None
+    ) or (
+            piece_at_new_position is not None and piece_at_new_position.startswith(focus_color) and
+            (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
+            row_ == selected_piece_positionY_ + 1
+    ):
+        # Valid pawn move (one step forward or capturing diagonally)
+        piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+        piece_positions[selected_piece_].append((col_, row_))
+        if piece_at_new_position is not None:
+            remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+
+
+def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
+    piece_at_new_position = piece_at_position(col_, row_)
+    if col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 2 and \
+            selected_piece_positionY_ == 6:
+        # Initial move: two steps forward
+        if (piece_at_new_position is None and
+                piece_at_position(col_, selected_piece_positionY_ - 1) is None):
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
-            if piece_at_new_position is not None:
-                remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+    elif (
+            col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1 and
+            piece_at_new_position is None
+    ) or (
+            piece_at_new_position is not None and piece_at_new_position.startswith(focus_color) and
+            (col_ == selected_piece_positionX_ + 1 or col_ == selected_piece_positionX_ - 1) and
+            row_ == selected_piece_positionY_ - 1
+    ):
+        # Valid pawn move (one step forward or capturing diagonally)
+        piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
+        piece_positions[selected_piece_].append((col_, row_))
+        if piece_at_new_position is not None:
+            remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+
+
+def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
+    if not white_first_player:
+        if selected_piece_.startswith('white_pawn'):
+            update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                               'black')
+        elif selected_piece_.startswith('black_pawn'):
+            update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                               'white')
+    else:
+        if selected_piece_.startswith('black_pawn'):
+            update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                               'white')
+        elif selected_piece_.startswith('white_pawn'):
+            update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                               'black')
 
 
 def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, selected_piece_positionX_,
