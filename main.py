@@ -137,6 +137,9 @@ def en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, se
 
             remove_opposite_pawn_en_passant(potential_opposite_pawn_left, selected_piece_positionX_ - 1,
                                             selected_piece_positionY_)
+            return True
+        else:
+            return False
     if col_ == selected_piece_positionX_ + 1 and row_ == selected_piece_positionY_ + y_offset and \
             potential_opposite_pawn_right is not None and potential_opposite_pawn_right.endswith('pawn'):
         if is_opposite_color(selected_piece_, potential_opposite_pawn_right) and \
@@ -146,6 +149,11 @@ def en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, se
 
             remove_opposite_pawn_en_passant(potential_opposite_pawn_right, selected_piece_positionX_ + 1,
                                             selected_piece_positionY_)
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
@@ -158,6 +166,9 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
             check_if_moved_pawns[selected_piece_][selected_piece_positionX_] = True
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
+            return True
+        else:
+            return False
     elif (
             col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ + 1 and
             piece_at_new_position is None
@@ -175,11 +186,14 @@ def update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         # check for pawn promotion
         if row_ == 7:
             pawn_promotion(col_, row_, selected_piece_)
+        return True
 
     elif piece_at_new_position is None and selected_piece_positionY_ == 4:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
         # it has just been initially moved 2 steps forward
-        en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, 1)
+        return en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, 1)
+    else:
+        return False
 
 
 def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, focus_color):
@@ -192,6 +206,9 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
             check_if_moved_pawns[selected_piece_][selected_piece_positionX_] = True
             piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
             piece_positions[selected_piece_].append((col_, row_))
+            return True
+        else:
+            return False
     elif (
             col_ == selected_piece_positionX_ and row_ == selected_piece_positionY_ - 1 and
             piece_at_new_position is None
@@ -209,11 +226,13 @@ def update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, s
         # check for pawn promotion
         if row_ == 0:
             pawn_promotion(col_, row_, selected_piece_)
-
+        return True
     elif piece_at_new_position is None and selected_piece_positionY_ == 3:
         # En passant: take pawn of opposite color if it is adjacent to this selected pawn and if
         # it has just been initially moved 2 steps forward
-        en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, -1)
+        return en_passant_helper(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_, -1)
+    else:
+        return False
 
 
 def pawn_promotion(col_, row_, selected_piece_):
@@ -243,18 +262,22 @@ def remove_opposite_pawn_en_passant(potential_opposite_pawn, opposite_pawn_posit
 def update_pawn_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
     if not white_first_player:
         if selected_piece_.startswith('white_pawn'):
-            update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
-                               'black')
+            return update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                                      'black')
         elif selected_piece_.startswith('black_pawn'):
-            update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
-                               'white')
+            return update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                                      'white')
+        else:
+            return False
     else:
         if selected_piece_.startswith('black_pawn'):
-            update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
-                               'white')
+            return update_upper_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                                      'white')
         elif selected_piece_.startswith('white_pawn'):
-            update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
-                               'black')
+            return update_lower_pawns(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_,
+                                      'black')
+        else:
+            return False
 
 
 def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, selected_piece_positionX_,
@@ -326,20 +349,27 @@ def update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
     if piece_at_new_position is None and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
+        return True
     elif piece_at_new_position is not None and is_opposite_color(selected_piece_, piece_at_new_position) and big_check:
         piece_positions[selected_piece_].remove((selected_piece_positionX_, selected_piece_positionY_))
         piece_positions[selected_piece_].append((col_, row_))
         remove_piece_at_new_position(piece_at_new_position, col_, row_, selected_piece_)
+        return True
+    else:
+        return False
 
 
 def update_king_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
     if selected_piece_.startswith('white_king') or selected_piece_.startswith('black_king'):
         if abs(col_ - selected_piece_positionX_) <= 1 and abs(row_ - selected_piece_positionY_) <= 1:
             # Valid king move
-            update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
-                          selected_piece_positionY_)
+            valid_king_update_ = update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
+                                               selected_piece_positionY_)
             if not check_if_moved[selected_piece_]:
                 check_if_moved[selected_piece_] = True
+            return valid_king_update_
+    else:
+        return False
 
 
 def update_queen_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -347,16 +377,22 @@ def update_queen_positions(col_, row_, selected_piece_, selected_piece_positionX
         if (col_ == selected_piece_positionX_ or row_ == selected_piece_positionY_ or
                 abs(col_ - selected_piece_positionX_) == abs(row_ - selected_piece_positionY_)):
             # Valid queen move
-            update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
-                          selected_piece_positionY_)
+            valid_queen_update_ = update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
+                                                selected_piece_positionY_)
+            return valid_queen_update_
+    else:
+        return False
 
 
 def update_bishop_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
     if selected_piece_.startswith('white_bishop') or selected_piece_.startswith('black_bishop'):
         if abs(col_ - selected_piece_positionX_) == abs(row_ - selected_piece_positionY_):
             # Valid bishop move
-            update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
-                          selected_piece_positionY_)
+            valid_bishop_update_ = update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
+                                                 selected_piece_positionY_)
+            return valid_bishop_update_
+    else:
+        return False
 
 
 def update_knight_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -366,18 +402,24 @@ def update_knight_positions(col_, row_, selected_piece_, selected_piece_position
                 (abs(col_ - selected_piece_positionX_) == 2 and abs(row_ - selected_piece_positionY_) == 1)
         ):
             # Valid knight move
-            update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
-                          selected_piece_positionY_)
+            valid_knight_update_ = update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
+                                                 selected_piece_positionY_)
+            return valid_knight_update_
+    else:
+        return False
 
 
 def update_rook_positions(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
     if selected_piece_.startswith('white_rook') or selected_piece_.startswith('black_rook'):
         if col_ == selected_piece_positionX_ or row_ == selected_piece_positionY:
             # Valid rook move
-            update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
-                          selected_piece_positionY_)
+            valid_rook_update_ = update_helper(col_, row_, selected_piece_, selected_piece_positionX_,
+                                               selected_piece_positionY_)
             if not check_if_moved[selected_piece_]:
                 check_if_moved[selected_piece_] = True
+            return valid_rook_update_
+    else:
+        return False
 
 
 def long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -396,6 +438,11 @@ def long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected
             # Bring rook to (3, y_idx)
             piece_positions[f'{rook_color}_rook'].remove((0, selected_piece_positionY_))
             piece_positions[f'{rook_color}_rook'].append((3, selected_piece_positionY_))
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 def short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -414,6 +461,11 @@ def short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selecte
             # Bring rook to (5, y_idx)
             piece_positions[f'{rook_color}_rook'].remove((7, selected_piece_positionY_))
             piece_positions[f'{rook_color}_rook'].append((5, selected_piece_positionY_))
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 def castling(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_):
@@ -421,8 +473,11 @@ def castling(col_, row_, selected_piece_, selected_piece_positionX_, selected_pi
         and not check_if_moved['white_rook']) or \
             (selected_piece_.startswith('black_king') and not check_if_moved[selected_piece_] and not check_if_moved[
                 'black_rook']):
-        long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_)
-        short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected_piece_positionY_)
+        long_castle_update_ = long_castle(col_, row_, selected_piece_, selected_piece_positionX_,
+                                          selected_piece_positionY_)
+        short_castle_update_ = short_castle(col_, row_, selected_piece_, selected_piece_positionX_,
+                                            selected_piece_positionY_)
+        return long_castle_update_ or short_castle_update_
 
 
 # Main game loop
@@ -430,6 +485,8 @@ selected_piece = None
 selected_piece_positionX, selected_piece_positionY = -1, -1
 dragging = False
 
+white_to_move = True
+selected_piece_moved = False  # Track if the selected piece has moved
 running = True
 
 while running:
@@ -442,9 +499,11 @@ while running:
             row = y // SQUARE_SIZE
             for piece in piece_positions.keys():
                 if (col, row) in piece_positions[piece]:
-                    selected_piece = piece
-                    selected_piece_positionX, selected_piece_positionY = col, row
-                    dragging = True
+                    if (white_to_move and piece.startswith('white_')) or (
+                            not white_to_move and piece.startswith('black_')):
+                        selected_piece = piece
+                        selected_piece_positionX, selected_piece_positionY = col, row
+                        dragging = True
                     break
 
         elif event.type == pygame.MOUSEBUTTONUP and dragging:
@@ -455,25 +514,45 @@ while running:
                 selected_piece = None
                 selected_piece_positionX, selected_piece_positionY = -1, -1
                 dragging = False
+                selected_piece_moved = False  # Reset the flag when the piece is not moved
                 break
             else:
+                if selected_piece_positionX == col and selected_piece_positionY == row:
+                    # Piece didn't move; deselect it and continue the same player's turn
+                    selected_piece = None
+                    dragging = False
+                else:
+                    # Check and update piece movements
+                    valid_pawn_update = update_pawn_positions(col, row, selected_piece, selected_piece_positionX,
+                                                              selected_piece_positionY)
+                    valid_king_update = update_king_positions(col, row, selected_piece, selected_piece_positionX,
+                                                              selected_piece_positionY)
+                    valid_queen_update = update_queen_positions(col, row, selected_piece, selected_piece_positionX,
+                                                                selected_piece_positionY)
+                    valid_bishop_update = update_bishop_positions(col, row, selected_piece, selected_piece_positionX,
+                                                                  selected_piece_positionY)
+                    valid_knight_update = update_knight_positions(col, row, selected_piece, selected_piece_positionX,
+                                                                  selected_piece_positionY)
+                    valid_rook_update = update_rook_positions(col, row, selected_piece, selected_piece_positionX,
+                                                              selected_piece_positionY)
 
-                # Check and update piece movements
-                update_pawn_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                update_king_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                update_queen_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                update_bishop_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                update_knight_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
-                update_rook_positions(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                    valid_castling = castling(col, row, selected_piece, selected_piece_positionX,
+                                              selected_piece_positionY)
 
-                castling(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY)
+                    valid_move_exists = valid_pawn_update or valid_king_update or valid_queen_update or \
+                        valid_bishop_update or valid_knight_update or valid_rook_update or valid_castling
 
-                draw_board()  # Redraw the board to clear old and update new positions
-                draw_pieces()  # Redraw the pieces with the updated positions
+                    draw_board()  # Redraw the board to clear old and update new positions
+                    draw_pieces()  # Redraw the pieces with the updated positions
 
-                selected_piece = None
-                selected_piece_positionX, selected_piece_positionY = -1, -1
-                dragging = False
+                    selected_piece = None
+                    dragging = False
+                    selected_piece_moved = True  # Set the flag to true when the piece is moved
+
+                    # Toggle player turn if the piece has moved
+                    if selected_piece_moved:
+                        if valid_move_exists:
+                            white_to_move = not white_to_move
 
     draw_board()
     draw_pieces()
