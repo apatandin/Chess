@@ -418,11 +418,15 @@ def long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected
     if (col_, row_) in [(0, selected_piece_positionY_), (2, selected_piece_positionY_)] and \
             (selected_piece_positionX_, selected_piece_positionY_) == (4, selected_piece_positionY_):
         no_piece_in_between = True
+        king_is_not_on_check_in_between = True
+        king_color = selected_piece_.split("_")[0]
         for x_pos in range(1, 4):
             piece_in_between = piece_at_position(x_pos, selected_piece_positionY_)
             if piece_in_between is not None:
                 no_piece_in_between = False
-        if no_piece_in_between:
+            king_is_not_on_check_in_between = king_is_not_on_check_in_between and \
+                not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
+        if no_piece_in_between and king_is_not_on_check_in_between:
             rook_color = selected_piece_.split("_")[0]
             # Bring king to (2, y_idx)
             piece_positions[selected_piece_].remove((4, selected_piece_positionY_))
@@ -441,11 +445,15 @@ def short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selecte
     if (col_, row_) in [(6, selected_piece_positionY_), (7, selected_piece_positionY_)] and \
             (selected_piece_positionX_, selected_piece_positionY_) == (4, selected_piece_positionY_):
         no_piece_in_between = True
+        king_is_not_on_check_in_between = True
+        king_color = selected_piece_.split("_")[0]
         for x_pos in range(5, 7):
             piece_in_between = piece_at_position(x_pos, selected_piece_positionY_)
             if piece_in_between is not None:
                 no_piece_in_between = False
-        if no_piece_in_between:
+            king_is_not_on_check_in_between = king_is_not_on_check_in_between and \
+                not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
+        if no_piece_in_between and king_is_not_on_check_in_between:
             rook_color = selected_piece_.split("_")[0]
             # Bring king to (6, y_idx)
             piece_positions[selected_piece_].remove((4, selected_piece_positionY_))
@@ -604,7 +612,7 @@ while running:
                                                   selected_piece_positionY)
 
                         valid_move_exists = valid_pawn_update or valid_king_update or valid_queen_update or \
-                            valid_bishop_update or valid_knight_update or valid_rook_update or valid_castling
+                                            valid_bishop_update or valid_knight_update or valid_rook_update or valid_castling
 
                         if valid_move_exists:
                             current_color = selected_piece.split("_")[0]
