@@ -82,16 +82,14 @@ def draw_board():
             draw_board_cell(col_, row_)
 
 
-def draw_pieces():
+def draw_pieces(selected_piece_positionX_, selected_piece_positionY_):
     for piece_, positions in piece_positions.items():
         for col_, row_ in positions:
-            draw_piece(piece_, col_, row_)
-
-
-def draw_piece(piece_name, col_, row_):
-    piece_image_ = piece_images[piece_name]
-    xx, yy = col_ * SQUARE_SIZE, row_ * SQUARE_SIZE
-    screen.blit(piece_image_, (xx, yy))
+            # Skip drawing the selected piece at its original position while dragging
+            if dragging and selected_piece == piece and (col_, row_) == (selected_piece_positionX_,
+                                                                         selected_piece_positionY_):
+                continue
+            screen.blit(piece_images[piece_], (col_ * SQUARE_SIZE, row_ * SQUARE_SIZE))
 
 
 def piece_at_position(col_, row_):
@@ -491,6 +489,30 @@ def is_king_in_check(king_color, king_x, king_y):
     return False
 
 
+def get_legal_king_moves(piece_, x_, y_):
+    color_ = piece_.split("_")[0]
+    legal_moves = []
+
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            nx, ny = x_ + dx, y_ + dy
+            if 0 <= nx < 8 and 0 <= ny < 8:
+                if (nx, ny) == (x_, y_):
+                    continue  # same position
+                # check if target square has a friendly piece
+                occupied = False
+                for other_piece, positions in piece_positions.items():
+                    if (nx, ny) in positions and other_piece.startswith(color_):
+                        occupied = True
+                        break
+                if occupied:
+                    continue
+                # check if this move would place the king in check
+                if not is_king_in_check(color_, nx, ny):
+                    legal_moves.append((nx, ny))
+    return legal_moves
+
+
 def piece_can_attack(piece_, col_, row_, target_col, target_row):
     piece_color = piece_.split('_')[0]
 
@@ -571,7 +593,7 @@ while running:
             x, y = pygame.mouse.get_pos()
             col = x // SQUARE_SIZE
             row = y // SQUARE_SIZE
-            if col not in range(0, 8) or row not in range(0, 8):
+            if col not in range(8) or row not in range(8):
                 selected_piece = None
                 selected_piece_positionX, selected_piece_positionY = -1, -1
                 dragging = False
@@ -594,28 +616,14 @@ while running:
                     ## Selected piece is a king and is on check
                     elif king_is_on_check[f"{current_color}_king"] and selected_piece.endswith(f"{current_color}_king"):
                         ## Can only bring king to a cell where the king will not be on check.
-                        possible_king_moves = []
-                        for cl_ in [selected_piece_positionX - 1, selected_piece_positionX,
-                                    selected_piece_positionX + 1]:
-                            for rw_ in [selected_piece_positionY - 1, selected_piece_positionY,
-                                        selected_piece_positionY + 1]:
-                                if cl_ != selected_piece_positionX and rw_ != selected_piece_positionY:
-                                    if not is_king_in_check(current_color, cl_, rw_):
-                                        possible_king_moves.append((cl_, rw_))
-                        ## TODO: this case does not include the correct possible king moves
+                        possible_king_moves = get_legal_king_moves(selected_piece, selected_piece_positionX,
+                                                                   selected_piece_positionY)
                         print(f"({col}, {row}) is in {possible_king_moves}")
                         if (col, row) in possible_king_moves:
                             valid_king_update = update_king_positions(col, row, selected_piece,
                                                                       selected_piece_positionX,
                                                                       selected_piece_positionY)
-                    # if (king_is_on_check["white_king"] and not selected_piece.endswith("white_king")) or \
-                    #         (king_is_on_check["black_king"] and not selected_piece.endswith("black_king")):
-                    #     # King piece is on check but another piece was selected;
-                    #     # Deselect other piece and continue same player's turn
-                    #     #TODO: keep track of a list of pieces that attack the king. And if the selected_piece is not a king,
-                    #     # then it can still be moved to a position that blocks the attacking pieces.
-                    #     selected_piece = None
-                    #     dragging = False
+                            valid_move_exists = True
                     else:
 
                         valid_pawn_update = update_pawn_positions(col, row, selected_piece, selected_piece_positionX,
@@ -651,7 +659,8 @@ while running:
                                 print(king_is_on_check)
 
                     draw_board()  # Redraw the board to clear old and update new positions
-                    draw_pieces()  # Redraw the pieces with the updated positions
+                    draw_pieces(selected_piece_positionX,
+                                selected_piece_positionY)  # Redraw the pieces with the updated positions
 
                     selected_piece = None
                     dragging = False
@@ -663,7 +672,7 @@ while running:
                             white_to_move = not white_to_move
 
     draw_board()
-    draw_pieces()
+    draw_pieces(selected_piece_positionX, selected_piece_positionY)
 
     if dragging and selected_piece:
         x, y = pygame.mouse.get_pos()
