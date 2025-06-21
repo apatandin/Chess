@@ -1,10 +1,12 @@
 import pygame
 
 # Define constants for the board
-WIDTH, HEIGHT = 500, 500
+WIDTH, HEIGHT = 700, 700
 SQUARE_SIZE = WIDTH // 8
 WHITE = (255, 255, 255)
 GREY = (192, 192, 192)
+LIGHT_BROWN = (222, 184, 135)
+DARK_BROWN = (139, 69, 19)
 FONT_SIZE = 36
 
 # Load piece images
@@ -70,7 +72,7 @@ pygame.display.set_caption("Chess Board")
 def draw_board_cell(col_, row_):
     xx = col_ * SQUARE_SIZE
     yy = row_ * SQUARE_SIZE
-    color_ = WHITE if (row_ + col_) % 2 == 0 else GREY
+    color_ = WHITE if (row_ + col_) % 2 == 0 else LIGHT_BROWN
     pygame.draw.rect(screen, color_, (xx, yy, SQUARE_SIZE, SQUARE_SIZE))
 
 
@@ -425,7 +427,7 @@ def long_castle(col_, row_, selected_piece_, selected_piece_positionX_, selected
             if piece_in_between is not None:
                 no_piece_in_between = False
             king_is_not_on_check_in_between = king_is_not_on_check_in_between and \
-                not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
+                                              not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
         if no_piece_in_between and king_is_not_on_check_in_between:
             rook_color = selected_piece_.split("_")[0]
             # Bring king to (2, y_idx)
@@ -452,7 +454,7 @@ def short_castle(col_, row_, selected_piece_, selected_piece_positionX_, selecte
             if piece_in_between is not None:
                 no_piece_in_between = False
             king_is_not_on_check_in_between = king_is_not_on_check_in_between and \
-                not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
+                                              not is_king_in_check(king_color, x_pos, selected_piece_positionY_)
         if no_piece_in_between and king_is_not_on_check_in_between:
             rook_color = selected_piece_.split("_")[0]
             # Bring king to (6, y_idx)
@@ -583,12 +585,37 @@ while running:
                 else:
                     # Check and update piece movements
                     valid_move_exists = False
-                    if (king_is_on_check["white_king"] and not selected_piece.endswith("white_king")) or \
-                            (king_is_on_check["black_king"] and not selected_piece.endswith("black_king")):
-                        # King piece is on check but another piece was selected;
-                        # Deselect other piece and continue same player's turn
+                    current_color = selected_piece.split("_")[0]
+                    ## Selected piece is not a king but the king of its color is on check
+                    if king_is_on_check[f"{current_color}_king"] and not selected_piece.endswith(
+                            f"{current_color}_king"):
                         selected_piece = None
                         dragging = False
+                    ## Selected piece is a king and is on check
+                    elif king_is_on_check[f"{current_color}_king"] and selected_piece.endswith(f"{current_color}_king"):
+                        ## Can only bring king to a cell where the king will not be on check.
+                        possible_king_moves = []
+                        for cl_ in [selected_piece_positionX - 1, selected_piece_positionX,
+                                    selected_piece_positionX + 1]:
+                            for rw_ in [selected_piece_positionY - 1, selected_piece_positionY,
+                                        selected_piece_positionY + 1]:
+                                if cl_ != selected_piece_positionX and rw_ != selected_piece_positionY:
+                                    if not is_king_in_check(current_color, cl_, rw_):
+                                        possible_king_moves.append((cl_, rw_))
+                        ## TODO: this case does not include the correct possible king moves
+                        print(f"({col}, {row}) is in {possible_king_moves}")
+                        if (col, row) in possible_king_moves:
+                            valid_king_update = update_king_positions(col, row, selected_piece,
+                                                                      selected_piece_positionX,
+                                                                      selected_piece_positionY)
+                    # if (king_is_on_check["white_king"] and not selected_piece.endswith("white_king")) or \
+                    #         (king_is_on_check["black_king"] and not selected_piece.endswith("black_king")):
+                    #     # King piece is on check but another piece was selected;
+                    #     # Deselect other piece and continue same player's turn
+                    #     #TODO: keep track of a list of pieces that attack the king. And if the selected_piece is not a king,
+                    #     # then it can still be moved to a position that blocks the attacking pieces.
+                    #     selected_piece = None
+                    #     dragging = False
                     else:
 
                         valid_pawn_update = update_pawn_positions(col, row, selected_piece, selected_piece_positionX,
@@ -615,7 +642,6 @@ while running:
                                             valid_bishop_update or valid_knight_update or valid_rook_update or valid_castling
 
                         if valid_move_exists:
-                            current_color = selected_piece.split("_")[0]
                             king_piece = "white_king" if current_color == "black" else "black_king"
                             king_positionX = piece_positions[king_piece][0][0]
                             king_positionY = piece_positions[king_piece][0][1]
