@@ -287,9 +287,8 @@ def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, select
         y_dir = 1 if row_ > selected_piece_positionY_ else -1
         x_pos = selected_piece_positionX_ + x_dir
         y_pos = selected_piece_positionY_ + y_dir
-        while x_pos != col_ and y_pos != row_:
-            curr_piece_at_x_y_pos = piece_at_position(x_pos, y_pos)
-            if curr_piece_at_x_y_pos is not None:
+        while x_pos != col_ or y_pos != row_:
+            if piece_at_position(x_pos, y_pos) is not None:
                 return False
             x_pos += x_dir
             y_pos += y_dir
@@ -298,13 +297,14 @@ def check_if_no_pieces_present_between_old_and_new_queen_move(col_, row_, select
 
 def check_if_no_pieces_present_between_old_and_new_bishop_move(col_, row_, selected_piece_positionX_,
                                                                selected_piece_positionY_):
+    if abs(col_ - selected_piece_positionX_) != abs(row_ - selected_piece_positionY_):
+        return False
     x_dir = 1 if col_ > selected_piece_positionX_ else -1
     y_dir = 1 if row_ > selected_piece_positionY_ else -1
     x_pos = selected_piece_positionX_ + x_dir
     y_pos = selected_piece_positionY_ + y_dir
-    while x_pos != col_ and y_pos != row_:
-        curr_piece_at_x_y_pos = piece_at_position(x_pos, y_pos)
-        if curr_piece_at_x_y_pos is not None:
+    while x_pos != col_ or y_pos != row_:
+        if piece_at_position(x_pos, y_pos) is not None:
             return False
         x_pos += x_dir
         y_pos += y_dir
@@ -480,11 +480,11 @@ def castling(col_, row_, selected_piece_, selected_piece_positionX_, selected_pi
         return long_castle_update_ or short_castle_update_
 
 
-def is_king_in_check(king_color, king_x, king_y):
+def is_king_in_check(king_color, king_x_, king_y_):
     for piece_, positions in piece_positions.items():
         if piece_.split('_')[0] != king_color:
             for xx, yy in positions:
-                if piece_can_attack(piece_, xx, yy, king_x, king_y):
+                if piece_can_attack(piece_, xx, yy, king_x_, king_y_):
                     return True
     return False
 
@@ -576,6 +576,7 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
         elif event.type == pygame.MOUSEBUTTONDOWN and not dragging:
             x, y = pygame.mouse.get_pos()
             col = x // SQUARE_SIZE
@@ -583,7 +584,7 @@ while running:
             for piece in piece_positions.keys():
                 if (col, row) in piece_positions[piece]:
                     if (white_to_move and piece.startswith('white_')) or (
-                            not white_to_move and piece.startswith('black_')):
+                        not white_to_move and piece.startswith('black_')):
                         selected_piece = piece
                         selected_piece_positionX, selected_piece_positionY = col, row
                         dragging = True
@@ -593,83 +594,62 @@ while running:
             x, y = pygame.mouse.get_pos()
             col = x // SQUARE_SIZE
             row = y // SQUARE_SIZE
+
             if col not in range(8) or row not in range(8):
                 selected_piece = None
                 selected_piece_positionX, selected_piece_positionY = -1, -1
                 dragging = False
-                selected_piece_moved = False  # Reset the flag when the piece is not moved
-                break
-            else:
-                if selected_piece_positionX == col and selected_piece_positionY == row:
-                    # Piece didn't move; deselect it and continue the same player's turn
-                    selected_piece = None
-                    dragging = False
-                else:
-                    # Check and update piece movements
-                    valid_move_exists = False
-                    current_color = selected_piece.split("_")[0]
-                    ## Selected piece is not a king but the king of its color is on check
-                    if king_is_on_check[f"{current_color}_king"] and not selected_piece.endswith(
-                            f"{current_color}_king"):
-                        selected_piece = None
-                        dragging = False
-                    ## Selected piece is a king and is on check
-                    elif king_is_on_check[f"{current_color}_king"] and selected_piece.endswith(f"{current_color}_king"):
-                        ## Can only bring king to a cell where the king will not be on check.
-                        possible_king_moves = get_legal_king_moves(selected_piece, selected_piece_positionX,
-                                                                   selected_piece_positionY)
-                        print(f"({col}, {row}) is in {possible_king_moves}")
-                        if (col, row) in possible_king_moves:
-                            valid_king_update = update_king_positions(col, row, selected_piece,
-                                                                      selected_piece_positionX,
-                                                                      selected_piece_positionY)
-                            valid_move_exists = True
+                continue
+
+            if selected_piece_positionX == col and selected_piece_positionY == row:
+                selected_piece = None
+                dragging = False
+                continue
+
+            current_color = selected_piece.split("_")[0]
+            opponent_color = "white" if current_color == "black" else "black"
+            opponent_king = f"{opponent_color}_king"
+
+            # Backup board state
+            original_positions = {piece: positions.copy() for piece, positions in piece_positions.items()}
+
+            move_functions = [
+                update_pawn_positions,
+                update_king_positions,
+                update_queen_positions,
+                update_bishop_positions,
+                update_knight_positions,
+                update_rook_positions,
+                castling
+            ]
+
+            valid_move_made = False
+
+            for func in move_functions:
+                if func(col, row, selected_piece, selected_piece_positionX, selected_piece_positionY):
+                    # After moving, check if king is still in check
+                    king_name = f"{current_color}_king"
+                    king_x, king_y = piece_positions[king_name][0]
+                    if is_king_in_check(current_color, king_x, king_y):
+                        print("Move leaves king in check. Undoing move.")
+                        piece_positions = {piece: pos.copy() for piece, pos in original_positions.items()}
+                        valid_move_made = False
                     else:
+                        valid_move_made = True
+                    break
 
-                        valid_pawn_update = update_pawn_positions(col, row, selected_piece, selected_piece_positionX,
-                                                                  selected_piece_positionY)
+            if valid_move_made:
+                # Check if this move puts opponent in check
+                king_pos = piece_positions[opponent_king][0]
+                king_is_on_check[opponent_king] = is_king_in_check(opponent_color, king_pos[0], king_pos[1])
 
-                        valid_king_update = update_king_positions(col, row, selected_piece, selected_piece_positionX,
-                                                                  selected_piece_positionY)
+                white_to_move = not white_to_move
 
-                        valid_queen_update = update_queen_positions(col, row, selected_piece, selected_piece_positionX,
-                                                                    selected_piece_positionY)
-                        valid_bishop_update = update_bishop_positions(col, row, selected_piece,
-                                                                      selected_piece_positionX,
-                                                                      selected_piece_positionY)
-                        valid_knight_update = update_knight_positions(col, row, selected_piece,
-                                                                      selected_piece_positionX,
-                                                                      selected_piece_positionY)
-                        valid_rook_update = update_rook_positions(col, row, selected_piece, selected_piece_positionX,
-                                                                  selected_piece_positionY)
+            else:
+                print("Invalid move or leaves king in check.")
 
-                        valid_castling = castling(col, row, selected_piece, selected_piece_positionX,
-                                                  selected_piece_positionY)
-
-                        valid_move_exists = valid_pawn_update or valid_king_update or valid_queen_update or \
-                                            valid_bishop_update or valid_knight_update or valid_rook_update or valid_castling
-
-                        if valid_move_exists:
-                            king_piece = "white_king" if current_color == "black" else "black_king"
-                            king_positionX = piece_positions[king_piece][0][0]
-                            king_positionY = piece_positions[king_piece][0][1]
-
-                            if piece_can_attack(selected_piece, col, row, king_positionX, king_positionY):
-                                king_is_on_check[king_piece] = True
-                                print(king_is_on_check)
-
-                    draw_board()  # Redraw the board to clear old and update new positions
-                    draw_pieces(selected_piece_positionX,
-                                selected_piece_positionY)  # Redraw the pieces with the updated positions
-
-                    selected_piece = None
-                    dragging = False
-                    selected_piece_moved = True  # Set the flag to true when the piece is moved
-
-                    # Toggle player turn if the piece has moved
-                    if selected_piece_moved:
-                        if valid_move_exists:
-                            white_to_move = not white_to_move
+            selected_piece = None
+            dragging = False
 
     draw_board()
     draw_pieces(selected_piece_positionX, selected_piece_positionY)
