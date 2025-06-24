@@ -563,6 +563,80 @@ def king_can_attack(col_, row_, target_col, target_row):
     return abs(target_col - col_) <= 1 and abs(target_row - row_) <= 1
 
 
+def check_for_checkmate(opponent_color):
+    global piece_positions, king_is_on_check
+
+    opponent_king = f"{opponent_color}_king"
+    if not king_is_on_check.get(opponent_king, False):
+        return False
+
+    # Ensure the king exists
+    if opponent_king not in piece_positions or not piece_positions[opponent_king]:
+        return True  # King missing — technically a checkmate
+
+    king_x, king_y = piece_positions[opponent_king][0]
+
+    # 1. Try moving king away
+    for new_x, new_y in get_legal_king_moves(opponent_king, king_x, king_y):
+        backup = {p: pos.copy() for p, pos in piece_positions.items()}
+
+        try:
+            piece_positions[opponent_king].remove((king_x, king_y))
+            piece_positions[opponent_king].append((new_x, new_y))
+
+            # Remove any captured piece temporarily
+            for p, pos in piece_positions.items():
+                if p != opponent_king and (new_x, new_y) in pos:
+                    pos.remove((new_x, new_y))
+                    break
+
+            if not is_king_in_check(opponent_color, new_x, new_y):
+                piece_positions = backup
+                return False
+
+        except Exception as e:
+            print("Error during king simulation:", e)
+
+        piece_positions = backup
+
+    # 2. Try all other moves to block the check
+    move_functions = [
+        update_pawn_positions,
+        update_rook_positions,
+        update_knight_positions,
+        update_bishop_positions,
+        update_queen_positions,
+    ]
+
+    for piece, positions in piece_positions.items():
+        if not piece.startswith(opponent_color) or piece == opponent_king:
+            continue
+
+        for from_x, from_y in positions:
+            for to_x in range(8):
+                for to_y in range(8):
+                    if (from_x, from_y) == (to_x, to_y):
+                        continue
+
+                    backup = {p: pos.copy() for p, pos in piece_positions.items()}
+
+                    for move_func in move_functions:
+                        try:
+                            if move_func(to_x, to_y, piece, from_x, from_y):
+                                # Confirm king still exists and is safe
+                                if piece_positions.get(opponent_king) and piece_positions[opponent_king]:
+                                    king_pos = piece_positions[opponent_king][0]
+                                    if not is_king_in_check(opponent_color, king_pos[0], king_pos[1]):
+                                        piece_positions = backup
+                                        return False
+                        except Exception as e:
+                            print(f"Error during move simulation for {piece}:", e)
+
+                        piece_positions = backup
+                        break  # Stop trying other move functions if one succeeded
+
+    return True  # No escape or defense found — checkmate
+
 # Main game loop
 selected_piece = None
 selected_piece_positionX, selected_piece_positionY = -1, -1
@@ -583,8 +657,8 @@ while running:
             row = y // SQUARE_SIZE
             for piece in piece_positions.keys():
                 if (col, row) in piece_positions[piece]:
-                    if (white_to_move and piece.startswith('white_')) or (
-                        not white_to_move and piece.startswith('black_')):
+                    if (white_to_move and piece.startswith('white_')) or (not white_to_move and
+                                                                          piece.startswith('black_')):
                         selected_piece = piece
                         selected_piece_positionX, selected_piece_positionY = col, row
                         dragging = True
@@ -643,8 +717,10 @@ while running:
                 king_pos = piece_positions[opponent_king][0]
                 king_is_on_check[opponent_king] = is_king_in_check(opponent_color, king_pos[0], king_pos[1])
 
-                white_to_move = not white_to_move
+                if king_is_on_check[opponent_king]:
+                    print(check_for_checkmate(opponent_color))
 
+                white_to_move = not white_to_move
             else:
                 print("Invalid move or leaves king in check.")
 
